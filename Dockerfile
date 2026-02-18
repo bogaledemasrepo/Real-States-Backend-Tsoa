@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM oven/bun:1.3.3 as base
+FROM oven/bun:1.3.3 AS base
 WORKDIR /app
 
 # Install dependencies using the lockfile for consistency
