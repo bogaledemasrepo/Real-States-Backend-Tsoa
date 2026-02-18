@@ -37,4 +37,4 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: bogaledemasrepo/real-state-api:latest
+          tags: bogale640/real-state-api:latest
