@@ -10,7 +10,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 # Stage 2: Production Release
-FROM oven/bun:1.1-slim as release
+FROM oven/bun:1.1-slim AS release
 WORKDIR /app
 
 # Copy only what's needed to run
