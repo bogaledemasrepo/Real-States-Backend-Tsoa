@@ -71,8 +71,19 @@
 				"type": "object",
 				"additionalProperties": true
 			},
+			"ListingCategory": {
+				"type": "string",
+				"enum": [
+					"House",
+					"Villa",
+					"Apartment",
+					"Condo",
+					"Studio",
+					"Townhouse"
+				],
+				"description": "Interface for creating a new listing. \ntsoa will use this to validate the POST body."
+			},
 			"ListingCreateRequest": {
-				"description": "Interface for creating a new listing. \ntsoa will use this to validate the POST body.",
 				"properties": {
 					"title": {
 						"type": "string"
@@ -80,6 +91,9 @@
 					"address": {
 						"type": "string",
 						"minLength": 10
+					},
+					"category": {
+						"$ref": "#/components/schemas/ListingCategory"
 					},
 					"price": {
 						"type": "string"
@@ -119,6 +133,7 @@
 				"required": [
 					"title",
 					"address",
+					"category",
 					"price",
 					"numOfBedrooms",
 					"numOfBathrooms",
@@ -371,24 +386,64 @@
 						"description": "Ok",
 						"content": {
 							"application/json": {
-								"schema": {
-									"items": {},
-									"type": "array"
-								}
+								"schema": {}
 							}
 						}
 					}
 				},
-				"description": "Search for listings within a specific radius (in meters)\nof a geographic point.",
+				"description": "GET /listings/search\nSearch listings with multiple filters and pagination.",
 				"tags": [
-					"Real Estate"
+					"Real Estate Listings"
 				],
 				"security": [],
 				"parameters": [
 					{
 						"in": "query",
+						"name": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "category",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "minPrice",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "maxPrice",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "minBedrooms",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
 						"name": "lat",
-						"required": true,
+						"required": false,
 						"schema": {
 							"format": "double",
 							"type": "number"
@@ -397,7 +452,7 @@
 					{
 						"in": "query",
 						"name": "lng",
-						"required": true,
+						"required": false,
 						"schema": {
 							"format": "double",
 							"type": "number"
@@ -409,6 +464,26 @@
 						"required": false,
 						"schema": {
 							"default": 5000,
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "page",
+						"required": false,
+						"schema": {
+							"default": 1,
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"default": 10,
 							"format": "double",
 							"type": "number"
 						}
@@ -433,7 +508,7 @@
 				},
 				"description": "GET /listings/paged\nFetch listings with limit and offset pagination.",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [],
 				"parameters": [
@@ -475,7 +550,7 @@
 				},
 				"description": "GET /listings/featured\nReturns top-tier or recently boosted listings.",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [],
 				"parameters": []
@@ -496,7 +571,7 @@
 				},
 				"description": "GET /listings/recommended\nUses spatial logic to find listings near a coordinate.",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [],
 				"parameters": [
@@ -536,7 +611,7 @@
 				},
 				"description": "GET /listings/my-listings\nReturns listings created by the authenticated user.",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [
 					{
@@ -561,7 +636,7 @@
 				},
 				"description": "GET /listings/nearby\nReturns listings near a given coordinate.",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [
 					{
@@ -605,9 +680,13 @@
 				},
 				"description": "Listing Detail",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
-				"security": [],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
 				"parameters": [
 					{
 						"in": "path",
@@ -629,7 +708,7 @@
 				},
 				"description": "PUT /listings/{id}\nUpdate an existing listing.",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [
 					{
@@ -665,7 +744,7 @@
 				},
 				"description": "DELETE /listings/{id}",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [
 					{
@@ -695,7 +774,7 @@
 				},
 				"description": "Create a new listing.\nThe authenticated user's ID is automatically set as the agentId.",
 				"tags": [
-					"Listings"
+					"Real Estate Listings"
 				],
 				"security": [],
 				"parameters": [],
@@ -899,30 +978,27 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"items": {
-										"properties": {
-											"avatar": {
-												"type": "string"
-											},
-											"email": {
-												"type": "string"
-											},
-											"name": {
-												"type": "string"
-											},
-											"id": {
-												"type": "string"
-											}
+									"properties": {
+										"avatar": {
+											"type": "string"
 										},
-										"required": [
-											"avatar",
-											"email",
-											"name",
-											"id"
-										],
-										"type": "object"
+										"email": {
+											"type": "string"
+										},
+										"name": {
+											"type": "string"
+										},
+										"id": {
+											"type": "string"
+										}
 									},
-									"type": "array"
+									"required": [
+										"avatar",
+										"email",
+										"name",
+										"id"
+									],
+									"type": "object"
 								}
 							}
 						}

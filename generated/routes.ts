@@ -10,8 +10,6 @@ import { ReviewController } from './../controllers/reviewsController.js';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { ListingController } from './../controllers/listingController.js';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-import { ListingsController } from './../controllers/listingController.js';
-// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { BookingsController } from './../controllers/bookingsController.js';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { UsersController } from './../controllers/UserController.js';
@@ -48,11 +46,17 @@ const models: TsoaRoute.Models = {
         "additionalProperties": true,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "ListingCategory": {
+        "dataType": "refAlias",
+        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["House"]},{"dataType":"enum","enums":["Villa"]},{"dataType":"enum","enums":["Apartment"]},{"dataType":"enum","enums":["Condo"]},{"dataType":"enum","enums":["Studio"]},{"dataType":"enum","enums":["Townhouse"]}],"validators":{}},
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "ListingCreateRequest": {
         "dataType": "refObject",
         "properties": {
             "title": {"dataType":"string","required":true},
             "address": {"dataType":"string","required":true,"validators":{"minLength":{"value":10}}},
+            "category": {"ref":"ListingCategory","required":true},
             "price": {"dataType":"string","required":true},
             "numOfBedrooms": {"dataType":"string","required":true},
             "numOfBathrooms": {"dataType":"string","required":true},
@@ -239,9 +243,16 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         const argsListingController_searchListings: Record<string, TsoaRoute.ParameterSchema> = {
-                lat: {"in":"query","name":"lat","required":true,"dataType":"double"},
-                lng: {"in":"query","name":"lng","required":true,"dataType":"double"},
+                query: {"in":"query","name":"query","dataType":"string"},
+                category: {"in":"query","name":"category","dataType":"string"},
+                minPrice: {"in":"query","name":"minPrice","dataType":"double"},
+                maxPrice: {"in":"query","name":"maxPrice","dataType":"double"},
+                minBedrooms: {"in":"query","name":"minBedrooms","dataType":"double"},
+                lat: {"in":"query","name":"lat","dataType":"double"},
+                lng: {"in":"query","name":"lng","dataType":"double"},
                 radius: {"default":5000,"in":"query","name":"radius","dataType":"double"},
+                page: {"default":1,"in":"query","name":"page","dataType":"double"},
+                limit: {"default":10,"in":"query","name":"limit","dataType":"double"},
         };
         app.get('/listings/search',
             ...(fetchMiddlewares<RequestHandler>(ListingController)),
@@ -270,23 +281,23 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_getPaged: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_getPaged: Record<string, TsoaRoute.ParameterSchema> = {
                 page: {"default":1,"in":"query","name":"page","dataType":"double"},
                 limit: {"default":10,"in":"query","name":"limit","dataType":"double"},
         };
         app.get('/listings/paged',
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.getPaged)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.getPaged)),
 
-            async function ListingsController_getPaged(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_getPaged(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_getPaged, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_getPaged, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'getPaged',
@@ -301,21 +312,21 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_getFeatured: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_getFeatured: Record<string, TsoaRoute.ParameterSchema> = {
         };
         app.get('/listings/featured',
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.getFeatured)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.getFeatured)),
 
-            async function ListingsController_getFeatured(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_getFeatured(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_getFeatured, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_getFeatured, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'getFeatured',
@@ -330,23 +341,23 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_getRecommended: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_getRecommended: Record<string, TsoaRoute.ParameterSchema> = {
                 lat: {"in":"query","name":"lat","required":true,"dataType":"double"},
                 lng: {"in":"query","name":"lng","required":true,"dataType":"double"},
         };
         app.get('/listings/recommended',
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.getRecommended)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.getRecommended)),
 
-            async function ListingsController_getRecommended(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_getRecommended(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_getRecommended, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_getRecommended, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'getRecommended',
@@ -361,23 +372,23 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_getMyListings: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_getMyListings: Record<string, TsoaRoute.ParameterSchema> = {
                 request: {"in":"request","name":"request","required":true,"dataType":"object"},
         };
         app.get('/listings/my-listings',
             authenticateMiddleware([{"jwt":[]}]),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.getMyListings)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.getMyListings)),
 
-            async function ListingsController_getMyListings(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_getMyListings(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_getMyListings, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_getMyListings, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'getMyListings',
@@ -392,24 +403,24 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_getNearbyListings: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_getNearbyListings: Record<string, TsoaRoute.ParameterSchema> = {
                 lat: {"in":"query","name":"lat","required":true,"dataType":"double"},
                 lng: {"in":"query","name":"lng","required":true,"dataType":"double"},
         };
         app.get('/listings/nearby',
             authenticateMiddleware([{"jwt":[]}]),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.getNearbyListings)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.getNearbyListings)),
 
-            async function ListingsController_getNearbyListings(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_getNearbyListings(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_getNearbyListings, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_getNearbyListings, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'getNearbyListings',
@@ -424,22 +435,24 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_getListingDetail: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_getListingDetail: Record<string, TsoaRoute.ParameterSchema> = {
+                request: {"in":"request","name":"request","required":true,"dataType":"object"},
                 id: {"in":"path","name":"id","required":true,"dataType":"double"},
         };
         app.get('/listings/:id',
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.getListingDetail)),
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.getListingDetail)),
 
-            async function ListingsController_getListingDetail(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_getListingDetail(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_getListingDetail, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_getListingDetail, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'getListingDetail',
@@ -454,23 +467,23 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_createListing: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_createListing: Record<string, TsoaRoute.ParameterSchema> = {
                 body: {"in":"body","name":"body","required":true,"ref":"ListingCreateRequest"},
                 request: {"in":"request","name":"request","required":true,"dataType":"object"},
         };
         app.post('/listings',
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.createListing)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.createListing)),
 
-            async function ListingsController_createListing(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_createListing(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_createListing, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_createListing, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'createListing',
@@ -485,25 +498,25 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_updateListing: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_updateListing: Record<string, TsoaRoute.ParameterSchema> = {
                 request: {"in":"request","name":"request","required":true,"dataType":"object"},
                 id: {"in":"path","name":"id","required":true,"dataType":"double"},
                 body: {"in":"body","name":"body","required":true,"dataType":"any"},
         };
         app.put('/listings/:id',
             authenticateMiddleware([{"jwt":[]}]),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.updateListing)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.updateListing)),
 
-            async function ListingsController_updateListing(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_updateListing(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_updateListing, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_updateListing, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'updateListing',
@@ -518,24 +531,24 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsListingsController_deleteListing: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsListingController_deleteListing: Record<string, TsoaRoute.ParameterSchema> = {
                 request: {"in":"request","name":"request","required":true,"dataType":"object"},
                 id: {"in":"path","name":"id","required":true,"dataType":"double"},
         };
         app.delete('/listings/:id',
             authenticateMiddleware([{"jwt":[]}]),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController)),
-            ...(fetchMiddlewares<RequestHandler>(ListingsController.prototype.deleteListing)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController)),
+            ...(fetchMiddlewares<RequestHandler>(ListingController.prototype.deleteListing)),
 
-            async function ListingsController_deleteListing(request: ExRequest, response: ExResponse, next: any) {
+            async function ListingController_deleteListing(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsListingsController_deleteListing, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsListingController_deleteListing, request, response });
 
-                const controller = new ListingsController();
+                const controller = new ListingController();
 
               await templateService.apiHandler({
                 methodName: 'deleteListing',

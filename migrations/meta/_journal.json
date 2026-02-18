@@ -15,6 +15,13 @@
       "when": 1771329638691,
       "tag": "0001_simple_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771362940307,
+      "tag": "0002_aromatic_moon_knight",
+      "breakpoints": true
     }
   ]
 }

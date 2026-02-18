@@ -1,0 +1,2 @@
+CREATE TYPE "public"."listing_category" AS ENUM('House', 'Villa', 'Apartment', 'Condo', 'Studio', 'Townhouse');--> statement-breakpoint
+ALTER TABLE "real_state_listings" ADD COLUMN "category" "listing_category" DEFAULT 'House' NOT NULL;

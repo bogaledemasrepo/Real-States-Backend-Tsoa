@@ -9,8 +9,18 @@ import {
   geometry,
   index,
   integer,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
+export const categoryEnum = pgEnum("listing_category", [
+  "House", 
+  "Villa", 
+  "Apartment", 
+  "Condo", 
+  "Studio", 
+  "Townhouse"
+]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -26,6 +36,7 @@ export const listings = pgTable(
   {
     id: serial("id").primaryKey(),
     title: text("title").notNull(),
+    category: categoryEnum("category").notNull().default("House"),
     price: numeric("price", { precision: 12, scale: 2 }).notNull(),
     address: text("address").notNull(),
     numOfBedrooms: integer("num_of_bedrooms").notNull(),
@@ -102,15 +113,33 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
   }),
 }));
 
+
+// 1. Users Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  listings: many(listings),
+  bookings: many(bookings),
+  reviews: many(reviews),
+}));
+
+// 2. Listings Relations
+export const listingsRelations = relations(listings, ({ one, many }) => ({
+  agent: one(users, {
+    fields: [listings.agentId],
+    references: [users.id],
+  }),
+  bookings: many(bookings),
+  reviews: many(reviews),
+}));
+
+
+// 4. Reviews Relations
 export const reviewsRelations = relations(reviews, ({ one }) => ({
   listing: one(listings, {
     fields: [reviews.listingId],
     references: [listings.id],
   }),
-  user: one(users, { fields: [reviews.userId], references: [users.id] }),
-}));
-
-export const usersRelations = relations(users, ({ many }) => ({
-  listings: many(listings),
-  reviews: many(reviews),
+  user: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
+  }),
 }));

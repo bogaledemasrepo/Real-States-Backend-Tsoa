@@ -13,33 +13,124 @@ import {
   Security,
   Request,
 } from "tsoa";
-import { ListingService } from "../services/listingServices";
 import { db } from "../db";
 import { listings, reviews, users } from "../db/schema";
-import { eq, desc, sql, count } from "drizzle-orm";
+import { eq, desc, sql, count, and, gte, lte, ilike, or } from "drizzle-orm";
 import type { ListingCreateRequest } from "../models/listingRequest";
 import type { PaginatedResponse } from "../models";
 
-@Route("listings")
-@Tags("Real Estate")
-export class ListingController extends Controller {
-  /**
-   * Search for listings within a specific radius (in meters)
-   * of a geographic point.
-   */
-  @Get("search")
-  public async searchListings(
-    @Query() lat: number,
-    @Query() lng: number,
-    @Query() radius: number = 5000, // default 5km
-  ): Promise<any[]> {
-    return new ListingService().findNearby(lat, lng, radius);
-  }
+export interface ListingSearchParams {
+  /** Search in title or address */
+  query?: string;
+  category?: "House" | "Villa" | "Apartment" | "Condo" | "Studio" | "Townhouse";
+  minPrice?: number;
+  maxPrice?: number;
+  minBedrooms?: number;
+  minBathrooms?: number;
+  /** Radius in meters for spatial search */
+  radius?: number;
+  lat?: number;
+  lng?: number;
 }
 
 @Route("listings")
-@Tags("Listings")
-export class ListingsController extends Controller {
+@Tags("Real Estate Listings")
+export class ListingController extends Controller {
+  /**
+   * GET /listings/search
+   * Search listings with multiple filters and pagination.
+   */
+  @Get("search")
+  public async searchListings(
+    @Query() query?: string,
+    @Query() category?: string,
+    @Query() minPrice?: number,
+    @Query() maxPrice?: number,
+    @Query() minBedrooms?: number,
+    @Query() lat?: number,
+    @Query() lng?: number,
+    @Query() radius: number = 5000, // Default 5km
+    @Query() page: number = 1,
+    @Query() limit: number = 10,
+  ): Promise<any> {
+    const offset = (page - 1) * limit;
+    const filters = [];
+
+    // 1. Text Search (Case-insensitive)
+    if (query) {
+      filters.push(
+        or(
+          ilike(listings.title, `%${query}%`),
+          ilike(listings.address, `%${query}%`),
+        ),
+      );
+    }
+
+    // 2. Category Filter
+    if (category) {
+      filters.push(eq(listings.category, category as any));
+    }
+
+    // 3. Price Range (Remember: numeric is handled as string in Drizzle)
+    if (minPrice) filters.push(gte(listings.price, minPrice.toString()));
+    if (maxPrice) filters.push(lte(listings.price, maxPrice.toString()));
+
+    // 4. Room Counts
+    if (minBedrooms) filters.push(gte(listings.numOfBedrooms, minBedrooms));
+
+    // 5. Spatial Radius Filter (PostGIS)
+    // ST_DWithin is faster than ST_Distance for filtering
+    if (lat && lng) {
+      filters.push(
+        sql`ST_DWithin(${listings.location}, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326), ${radius})`,
+      );
+    }
+    // 6. Execute Query with Metadata
+    const [totalResult, data] = await Promise.all([
+      db
+        .select({ count: sql`count(distinct ${listings.id})` }) // distinct prevents double counting during joins
+        .from(listings)
+        .where(and(...filters)),
+      db
+        .select({
+          id: listings.id,
+          title: listings.title,
+          price: listings.price,
+          address: listings.address,
+          // Fixed: ensures we grab the first image correctly
+          image: sql<string>`${listings.images}[1]`,
+          // Fixed: Reference reviews.rating explicitly
+          rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
+
+          numOfReviews: sql<number>`COUNT(${reviews.id})`,
+         
+        })
+        .from(listings)
+        .leftJoin(reviews, eq(reviews.listingId, listings.id)) // CRITICAL: You must join the reviews table
+        .where(and(...filters))
+        .limit(limit)
+        .offset(offset)
+        .orderBy(
+          lat && lng
+            ? sql`${listings.location} <-> ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`
+            : sql`${listings.createdAt} DESC`,
+        )
+        .groupBy(listings.id), // Grouping by listing ID allows the AVG() to work
+    ]);
+
+    const total = Number(totalResult[0]?.count || 0);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   /**
    * GET /listings/paged
    * Fetch listings with limit and offset pagination.
@@ -62,8 +153,10 @@ export class ListingsController extends Controller {
           address: listings.address,
           image: sql<string>`CASE WHEN ${listings.images} IS NOT NULL THEN ${listings.images}[1] ELSE NULL END`,
           rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
+          numOfReviews: sql<number>`COUNT(${reviews.id})`,
         })
-        .from(listings).leftJoin(reviews, eq(reviews.listingId, listings.id))
+        .from(listings)
+        .leftJoin(reviews, eq(reviews.listingId, listings.id))
         .limit(limit)
         .offset(offset)
         .orderBy(desc(listings.createdAt))
@@ -99,10 +192,13 @@ export class ListingsController extends Controller {
         address: listings.address,
         image: sql<string>`CASE WHEN ${listings.images} IS NOT NULL THEN ${listings.images}[1] ELSE NULL END`,
         rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
+        numOfReviews: sql<number>`COUNT(${reviews.id})`,
       })
-      .from(listings).leftJoin(reviews, eq(reviews.listingId, listings.id))
+      .from(listings)
+      .leftJoin(reviews, eq(reviews.listingId, listings.id))
       .limit(5)
-      .orderBy(desc(listings.price)).groupBy(listings.id);
+      .orderBy(desc(listings.price))
+      .groupBy(listings.id);
   }
 
   /**
@@ -122,12 +218,15 @@ export class ListingsController extends Controller {
         address: listings.address,
         image: sql<string>`CASE WHEN ${listings.images} IS NOT NULL THEN ${listings.images}[1] ELSE NULL END`,
         rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
+        numOfReviews: sql<number>`COUNT(${reviews.id})`,
       })
-      .from(listings).leftJoin(reviews, eq(reviews.listingId, listings.id))
+      .from(listings)
+      .leftJoin(reviews, eq(reviews.listingId, listings.id))
       .orderBy(
         sql`${listings.location} <-> ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`,
       )
-      .limit(6).groupBy(listings.id);
+      .limit(6)
+      .groupBy(listings.id);
   }
 
   /**
@@ -151,10 +250,12 @@ export class ListingsController extends Controller {
         title: listings.title,
         price: listings.price,
         address: listings.address,
-         image: sql<string>`CASE WHEN ${listings.images} IS NOT NULL THEN ${listings.images}[1] ELSE NULL END`,
+        image: sql<string>`CASE WHEN ${listings.images} IS NOT NULL THEN ${listings.images}[1] ELSE NULL END`,
         rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
+        numOfReviews: sql<number>`COUNT(${reviews.id})`,
       })
-      .from(listings).leftJoin(reviews, eq(reviews.listingId, listings.id))
+      .from(listings)
+      .leftJoin(reviews, eq(reviews.listingId, listings.id))
       .where(eq(listings.agentId, agentId))
       .groupBy(listings.id);
   }
@@ -175,51 +276,59 @@ export class ListingsController extends Controller {
         title: listings.title,
         price: listings.price,
         address: listings.address,
-         image: sql<string>`CASE WHEN ${listings.images} IS NOT NULL THEN ${listings.images}[1] ELSE NULL END`,
+        image: sql<string>`CASE WHEN ${listings.images} IS NOT NULL THEN ${listings.images}[1] ELSE NULL END`,
         rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
+        numOfReviews: sql<number>`COUNT(${reviews.id})`,
       })
-      .from(listings).leftJoin(reviews, eq(reviews.listingId, listings.id))
+      .from(listings)
+      .leftJoin(reviews, eq(reviews.listingId, listings.id))
       .orderBy(
         sql`${listings.location} <-> ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`,
-      ).groupBy(listings.id)
+      )
+      .groupBy(listings.id)
       .limit(6);
   }
 
-/**
- * Listing Detail
- */
-@Get("{id}")
-public async getListingDetail(@Path() id: number): Promise<any> {
-  const result = await db
-    .select({
-      id: listings.id,
-      title: listings.title,
-      price: listings.price,
-      address: listings.address,
-      images: listings.images,
-      facilities: listings.facilities,
-      numOfBedrooms: listings.numOfBedrooms,
-      numOfBathrooms: listings.numOfBathrooms,
-      areaInSqFt: listings.areaInSqFt,
-      rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
-      numOfReviews: sql<number>`COUNT(${reviews.id})`,
-      createdAt: listings.createdAt,
-      updatedAt: listings.updatedAt,
-      agent: {
-        id: users.id,
-        name: users.name,
-        avatar: users.avatar
-      }
-    })
-    .from(listings)
-    .leftJoin(reviews, eq(reviews.listingId, listings.id)) // Join instead of subquery is faster
-    .leftJoin(users, eq(users.id, listings.agentId))
-    .where(eq(listings.id, id))
-    .groupBy(listings.id, users.id); // Required when using aggregate functions like AVG
+  /**
+   * Listing Detail
+   */
+  @Security("jwt")
+  @Get("{id}")
+  public async getListingDetail(@Request() request: any,@Path() id: number): Promise<any> {
+    const result = await db
+      .select({
+        id: listings.id,
+        title: listings.title,
+        category: listings.category,
+        price: listings.price,
+        address: listings.address,
+        images: listings.images,
+        facilities: listings.facilities,
+        numOfBedrooms: listings.numOfBedrooms,
+        numOfBathrooms: listings.numOfBathrooms,
+        areaInSqFt: listings.areaInSqFt,
+        rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
+        numOfReviews: sql<number>`COUNT(${reviews.id})`,
+        reviewedByMe: sql<boolean>`EXISTS (SELECT 1 FROM reviews r WHERE r.listing_id = ${listings.id} AND r.user_id = ${request.user.userId})`,
+        createdAt: listings.createdAt,
+        updatedAt: listings.updatedAt,
+        agent: {
+          id: users.id,
+          name: users.name,
+          phone: users.phone,
+          email: users.email,
+          avatar: users.avatar,
+        },
+      })
+      .from(listings)
+      .leftJoin(reviews, eq(reviews.listingId, listings.id)) // Join instead of subquery is faster
+      .leftJoin(users, eq(users.id, listings.agentId))
+      .where(eq(listings.id, id))
+      .groupBy(listings.id, users.id); // Required when using aggregate functions like AVG
 
-  return result[0]; // Select returns an array, so return the first item
-}
- 
+    return result[0]; // Select returns an array, so return the first item
+  }
+
   /**
    * Create a new listing.
    * The authenticated user's ID is automatically set as the agentId.
@@ -236,6 +345,7 @@ public async getListingDetail(@Path() id: number): Promise<any> {
     // 2. Perform the Insert
     await db.insert(listings).values({
       title: body.title,
+      category: body.category,
       price: body.price.toString(), // numeric(12,2) expects string in Drizzle
       address: body.address,
       numOfBedrooms: Number(body.numOfBedrooms), // integer expects number

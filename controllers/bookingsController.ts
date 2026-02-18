@@ -1,15 +1,28 @@
-import { 
-  Controller, Get, Post, Put, Body, Path, Route, Tags, Security, Request, SuccessResponse 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Path,
+  Route,
+  Tags,
+  Security,
+  Request,
+  SuccessResponse,
 } from "tsoa";
 import { db } from "../db";
 import { bookings, listings } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
-import type { BookingCreateRequest, BookingStatusUpdate } from "../models/booking";
+import type {
+  BookingCreateRequest,
+  BookingStatusUpdate,
+} from "../models/booking";
+import { sql } from "drizzle-orm";
 
 @Route("bookings")
 @Tags("Bookings")
 export class BookingsController extends Controller {
-
   /**
    * Create a booking request.
    * Automatically assigns the agent from the listing.
@@ -19,7 +32,7 @@ export class BookingsController extends Controller {
   @Post()
   public async createBooking(
     @Request() request: any,
-    @Body() body: BookingCreateRequest
+    @Body() body: BookingCreateRequest,
   ): Promise<any> {
     const userId = request.user.userId;
 
@@ -39,13 +52,16 @@ export class BookingsController extends Controller {
     }
 
     // 3. Create booking
-    const [newBooking] = await db.insert(bookings).values({
-      listingId: body.listingId,
-      userId: userId,
-      agentId: listing.agentId,
-      scheduledAt: body.scheduledAt,
-      notes: body.notes,
-    }).returning();
+    const [newBooking] = await db
+      .insert(bookings)
+      .values({
+        listingId: body.listingId,
+        userId: userId,
+        agentId: listing.agentId,
+        scheduledAt: body.scheduledAt,
+        notes: body.notes,
+      })
+      .returning();
 
     this.setStatus(201);
     return newBooking;
@@ -59,24 +75,53 @@ export class BookingsController extends Controller {
   public async getMyRequests(@Request() request: any): Promise<any> {
     return await db.query.bookings.findMany({
       where: eq(bookings.userId, request.user.userId),
-      with: { listing: true },
-      orderBy: [desc(bookings.scheduledAt)]
+      columns: {
+        id: true,
+        status: true,
+        notes: true,
+        createdAt: true,
+      },
+      with: {
+        listing: {
+          columns: { id: true, title: true, address: true, images: true, price: true },
+          extras: {
+            avgRating:
+              sql<number>`(SELECT COALESCE(ROUND(AVG(rating::numeric), 1), 0)::float FROM reviews WHERE reviews.listing_id = ${listings.id})`.as(
+                "avg_rating",
+              ),
+            reviewCount:
+              sql<number>`(SELECT COUNT(*)::int FROM reviews WHERE reviews.listing_id = ${listings.id})`.as(
+                "review_count",
+              ),
+          },
+        },
+        agent: {
+          columns: { name: true, phone: true, email: true, avatar: true },
+        },
+      },
+      // with: { listing: true },
+      orderBy: [desc(bookings.createdAt)],
     });
   }
-
   /**
    * Get all bookings assigned to the authenticated user (as an Agent).
    */
   @Security("jwt")
   @Get("agent-schedule")
   public async getAgentSchedule(@Request() request: any): Promise<any> {
+    const agentId = request.user.userId || request.user.id;
+
     return await db.query.bookings.findMany({
-      where: eq(bookings.agentId, request.user.userId),
-      with: { 
-        listing: true,
-        user: { columns: { name: true, phone: true } } 
+      where: eq(bookings.agentId, agentId),
+      with: {
+        listing: {
+          columns: { id: true, title: true, address: true },
+        },
+        user: {
+          columns: { name: true, phone: true, avatar: true },
+        },
       },
-      orderBy: [desc(bookings.scheduledAt)]
+      orderBy: [desc(bookings.scheduledAt)],
     });
   }
 
@@ -88,11 +133,11 @@ export class BookingsController extends Controller {
   public async updateStatus(
     @Path() id: number,
     @Request() request: any,
-    @Body() body: BookingStatusUpdate
+    @Body() body: BookingStatusUpdate,
   ): Promise<any> {
     const userId = request.user.id;
 
-    // Verify ownership: Only the agent can confirm/decline, 
+    // Verify ownership: Only the agent can confirm/decline,
     // and only the buyer/agent can cancel.
     const booking = await db.query.bookings.findFirst({
       where: eq(bookings.id, id),
@@ -111,7 +156,8 @@ export class BookingsController extends Controller {
       return { message: "Unauthorized" };
     }
 
-    await db.update(bookings)
+    await db
+      .update(bookings)
       .set({ status: body.status })
       .where(eq(bookings.id, id));
 

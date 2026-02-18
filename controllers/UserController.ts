@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Route,
-  Get,
-  Path,
-  Security,
-  Request,
-  Tags,
-} from "tsoa";
+import { Controller, Route, Get, Path, Security, Request, Tags } from "tsoa";
 
 import { HttpError } from "../services/HttpError";
 import { db } from "../db";
@@ -33,14 +25,16 @@ export class UsersController extends Controller {
   @Security("jwt")
   public async getMe(@Request() request: any) {
     const userId = request.user.userId;
-    return await db
+    const user = await db
       .select({
         id: users.id,
         name: users.name,
         email: users.email,
         avatar: users.avatar,
-      }).from(users)
+      })
+      .from(users)
       .where(eq(users.id, userId));
+    return user[0];
   }
 
   @Get("{id}")
@@ -61,6 +55,7 @@ export class UsersController extends Controller {
       // Professional way to trigger a 404
       throw new HttpError(404, "User not found");
     }
+    console.log(user);
 
     return user[0];
   }
