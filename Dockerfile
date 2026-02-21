@@ -9,6 +9,9 @@ RUN bun install --frozen-lockfile
 # Copy everything from your root directory
 COPY . .
 
+# Generate the routes and swagger spec inside the container
+RUN bun run build
+
 # Stage 2: Production Release
 FROM oven/bun:1.1-slim AS release
 WORKDIR /app
@@ -17,13 +20,13 @@ WORKDIR /app
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/*.ts ./
 COPY --from=base /app/*.json ./
-# If you have other folders like 'controllers' or 'db', copy them too:
 COPY --from=base /app/controllers ./controllers
 COPY --from=base /app/db ./db
+COPY --from=base /app/models ./models
+COPY --from=base /app/exceptions ./exceptions
 COPY --from=base /app/services ./services
 
 USER bun
 EXPOSE 3000
 
-# Replace 'app.ts' with your actual entry file name
 ENTRYPOINT [ "bun", "run", "index.ts" ]
