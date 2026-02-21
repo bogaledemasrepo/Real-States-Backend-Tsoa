@@ -18,6 +18,7 @@ WORKDIR /app
 
 # Copy only what's needed to run
 COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/generated ./generated
 COPY --from=base /app/*.ts ./
 COPY --from=base /app/*.json ./
 COPY --from=base /app/controllers ./controllers
