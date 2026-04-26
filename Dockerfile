@@ -27,6 +27,7 @@ COPY --from=base /app/models ./models
 COPY --from=base /app/exceptions ./exceptions
 COPY --from=base /app/services ./services
 
+CMD [ "bun","run","seed.ts" ]
 USER bun
 EXPOSE 3000
 

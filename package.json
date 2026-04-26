@@ -5,6 +5,7 @@
   "private": true,
  "scripts": {
   "dev": "bun --watch index.ts | pino-pretty -c -t 'SYS:HH:mm:ss'",
+  "seed":"bun run db/seed.ts",
   "start": "bun run index.ts",
   "build": "tsoa spec-and-routes",
   "db:generate": "drizzle-kit generate",
