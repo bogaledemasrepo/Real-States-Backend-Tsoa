@@ -3,7 +3,7 @@ import { db } from "./index";
 
 console.log("⏳ Running migrations...");
 
-await migrate(db, { migrationsFolder: "./drizzle" });
+await migrate(db, { migrationsFolder: "./migrations" });
 
 console.log("✅ Migrations completed!");
 process.exit(0);
