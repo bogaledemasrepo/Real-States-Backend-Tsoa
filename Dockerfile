@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM oven/bun:1.3.3 AS base
+FROM docker.io/oven/bun:1.3.3 AS base
 WORKDIR /app
 
 # Install dependencies using the lockfile for consistency
@@ -13,7 +13,7 @@ COPY . .
 RUN bun run build
 
 # Stage 2: Production Release
-FROM oven/bun:1.1-slim AS release
+FROM docker.io/oven/bun:1.1-slim AS release
 WORKDIR /app
 
 # Copy only what's needed to run
