@@ -22,9 +22,6 @@ COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/generated ./generated
 COPY --from=base /app/ ./ 
 
-# Give execution permission to the entrypoint script
-RUN chmod +x ./entrypoint.sh
-
 USER bun
 EXPOSE 3000
 
