@@ -12,23 +12,21 @@ COPY . .
 # Generate the routes and swagger spec inside the container
 RUN bun run build
 
-# Stage 2: Production Release
+# ... (Previous build stages) ...
+
 FROM docker.io/oven/bun:1.1-slim AS release
 WORKDIR /app
 
-# Copy only what's needed to run
+# Copy dependencies and source code
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/generated ./generated
-COPY --from=base /app/*.ts ./
-COPY --from=base /app/*.json ./
-COPY --from=base /app/controllers ./controllers
-COPY --from=base /app/db ./db
-COPY --from=base /app/models ./models
-COPY --from=base /app/exceptions ./exceptions
-COPY --from=base /app/services ./services
+COPY --from=base /app/ ./ 
 
-CMD [ "bun","run","seed.ts" ]
+# Give execution permission to the entrypoint script
+RUN chmod +x ./entrypoint.sh
+
 USER bun
 EXPOSE 3000
 
-ENTRYPOINT [ "bun", "run", "index.ts" ]
+# Use the script to manage the startup sequence
+ENTRYPOINT [ "./entrypoint.sh" ]
