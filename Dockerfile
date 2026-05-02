@@ -30,3 +30,5 @@ EXPOSE 3000
 
 # Use the script to manage the startup sequence
 ENTRYPOINT [ "./entrypoint.sh" ]
+
+CMD [ "bun","run","index.ts" ]
