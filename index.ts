@@ -1,2 +1,2 @@
 import { app } from "./app";
-app.listen(3000, () => console.log("🚀 Server at http://localhost:3000/docs"));
+app.listen(process.env.PORT||8000, () => console.log(`🚀 Server at ${process.env.PROD_API_URL||'http://localhost:8000'}/docs`));
