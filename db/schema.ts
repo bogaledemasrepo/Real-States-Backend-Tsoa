@@ -44,11 +44,12 @@ export const listings = pgTable(
     areaInSqFt: numeric("area_in_sq_ft", { precision: 10, scale: 2 }).notNull(),
     images: text("images").array().notNull(),
     facilities: text("facilities").array().notNull(),
-    location: geometry("location", {
-      type: "point",
-      mode: "xy",
-      srid: 4326,
-    }).notNull(),
+    
+   location: geometry("location", {
+  type: "point",
+  mode: "tuple", // 👈 Change "xy" to "tuple"
+  srid: 4326,
+}).notNull(),
     agentId: uuid("agent_id")
       .notNull()
       .references(() => users.id),

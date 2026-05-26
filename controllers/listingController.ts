@@ -103,7 +103,7 @@ export class ListingController extends Controller {
           rating: sql<number>`COALESCE(ROUND(AVG(CAST(${reviews.rating} AS NUMERIC)), 1), 0)::float`,
 
           numOfReviews: sql<number>`COUNT(${reviews.id})`,
-         
+
         })
         .from(listings)
         .leftJoin(reviews, eq(reviews.listingId, listings.id)) // CRITICAL: You must join the reviews table
@@ -223,7 +223,8 @@ export class ListingController extends Controller {
       .from(listings)
       .leftJoin(reviews, eq(reviews.listingId, listings.id))
       .orderBy(
-        sql`${listings.location} <-> ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`,
+        // Wrap listings.location in ST_SetSRID to match the 4326 input
+        sql`ST_SetSRID(${listings.location}, 4326) <-> ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`,
       )
       .limit(6)
       .groupBy(listings.id);
@@ -294,7 +295,7 @@ export class ListingController extends Controller {
    */
   @Security("jwt")
   @Get("{id}")
-  public async getListingDetail(@Request() request: any,@Path() id: number): Promise<any> {
+  public async getListingDetail(@Request() request: any, @Path() id: number): Promise<any> {
     const result = await db
       .select({
         id: listings.id,
@@ -346,15 +347,17 @@ export class ListingController extends Controller {
     await db.insert(listings).values({
       title: body.title,
       category: body.category,
-      price: body.price.toString(), // numeric(12,2) expects string in Drizzle
+      price: body.price.toString(), 
       address: body.address,
-      numOfBedrooms: Number(body.numOfBedrooms), // integer expects number
-      numOfBathrooms: Number(body.numOfBathrooms), // integer expects number
-      areaInSqFt: body.areaInSqFt.toString(), // numeric(10,2) expects string
+      numOfBedrooms: Number(body.numOfBedrooms), 
+      numOfBathrooms: Number(body.numOfBathrooms), 
+      areaInSqFt: body.areaInSqFt.toString(), 
       images: body.images,
       facilities: body.facilities,
       agentId: authenticatedAgentId,
-      location: { x: body.lng, y: body.lat },
+      
+      // FIX: Changed from { x: body.lng, y: body.lat } to a tuple array [lng, lat]
+      location: [body.lng, body.lat], 
     });
     this.setStatus(201);
   }
